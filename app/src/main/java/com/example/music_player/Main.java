@@ -1,7 +1,11 @@
 package com.example.music_player;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 
 import androidx.annotation.NonNull;
@@ -15,9 +19,14 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
 
 public class Main extends Fragment {
 
+    Context context = null;
     SeekBar bar;
     ImageView playButton;
     int buttonState = 0;
@@ -25,15 +34,18 @@ public class Main extends Fragment {
     MediaPlayer mediaPlayer;
     int currentProgress = 0;
     boolean sliderChecker = false;
+    int debug = 0;
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        MediaPlayer mediaPlayer = MediaPlayer.create(view.getContext(),R.raw.gfdg);
+        context = view.getContext();
 
 
         playButton = view.findViewById(R.id.playButton);
         bar = view.findViewById(R.id.musicBar);
+
+        bar.getProgressDrawable().setColorFilter(Color.rgb(255,255,255), PorterDuff.Mode.MULTIPLY);
+
 
 
 
@@ -41,13 +53,19 @@ public class Main extends Fragment {
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                System.out.println(Player.getNextMusic().toString());
 
 
                 if (buttonState == 0){
+                    if (mediaPlayer == null) {
+                        Uri tempUri = Player.getNextMusic();
+                        mediaPlayer = MediaPlayer.create(view.getContext(), tempUri);
+                    }
+
 
                     playButton.setImageResource(R.drawable.pause);
                     sliderChecker = true;
-                    bar.setMax(mediaPlayer.getDuration()+3000);
+                    bar.setMax(mediaPlayer.getDuration());
                     buttonState++;
                     mediaPlayer.start();
 
@@ -116,10 +134,6 @@ public class Main extends Fragment {
 
     }
 
-
-
-
-
     public class BarThread extends Thread {
 
         @Override
@@ -128,14 +142,16 @@ public class Main extends Fragment {
 
             try {
                 while (true) {
+
                     if (buttonState == 1) {
-                        sleep(10);
-                        currentProgress+=10;
+                        sleep(100);
+                        currentProgress+=100;
 
                             if (currentProgress >= bar.getMax()) {
 
                                 bar.setProgress(bar.getMax());
                                 buttonState--;
+
                                 break;
 
                             }
@@ -146,9 +162,12 @@ public class Main extends Fragment {
                 }
 
 
+                mediaPlayer = null;
+                debug++;
                 isThreadActive = false;
                 bar.setProgress(0);
                 currentProgress = 0;
+                Player.updateIndex();
                 interrupt();
 
             } catch (InterruptedException e) {

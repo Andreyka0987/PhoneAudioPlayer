@@ -77,7 +77,6 @@ public class MainActivity extends AppCompatActivity {
                 super.onPageSelected(position);
 
                 if (tabLayout.getSelectedTabPosition() != position) {
-                    Toast.makeText(MainActivity.this,"1", Toast.LENGTH_SHORT).show();
                     tabLayout.getTabAt(position).select();
                 }
             }
