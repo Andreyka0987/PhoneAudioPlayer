@@ -19,10 +19,6 @@ import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.Toast;
 
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-
 
 public class Main extends Fragment {
 
@@ -35,17 +31,19 @@ public class Main extends Fragment {
     int currentProgress = 0;
     boolean sliderChecker = false;
     int debug = 0;
+
+    Uri mainUri = null;
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
         context = view.getContext();
-
 
         playButton = view.findViewById(R.id.playButton);
         bar = view.findViewById(R.id.musicBar);
 
         bar.getProgressDrawable().setColorFilter(Color.rgb(255,255,255), PorterDuff.Mode.MULTIPLY);
 
+        Folder.updateInternalLib(context);
 
 
 
@@ -53,29 +51,36 @@ public class Main extends Fragment {
         playButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                System.out.println(Player.getNextMusic().toString());
 
 
                 if (buttonState == 0){
+
+
                     if (mediaPlayer == null) {
-                        Uri tempUri = Player.getNextMusic();
-                        mediaPlayer = MediaPlayer.create(view.getContext(), tempUri);
+                        mainUri = Player.getNextMusic();
+
+                        if (!mainUri.toString().equals("10")) {
+
+                            mediaPlayer = MediaPlayer.create(view.getContext(), mainUri);
+                        }
                     }
 
+                    if (!mainUri.toString().equals("10")) {
+                        playButton.setImageResource(R.drawable.pause);
+                        sliderChecker = true;
+                        bar.setMax(mediaPlayer.getDuration());
+                        buttonState++;
+                        mediaPlayer.start();
 
-                    playButton.setImageResource(R.drawable.pause);
-                    sliderChecker = true;
-                    bar.setMax(mediaPlayer.getDuration());
-                    buttonState++;
-                    mediaPlayer.start();
 
-
-                    if (!isThreadActive){
-                        new BarThread().start();
-                        isThreadActive = true;
+                        if (!isThreadActive) {
+                            new BarThread().start();
+                            isThreadActive = true;
+                        }
                     }
-
-
+                    else{
+                        Toast.makeText(context,"Something went wrong",Toast.LENGTH_SHORT).show();
+                    }
 
 
 
@@ -98,7 +103,7 @@ public class Main extends Fragment {
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser){
+                if (fromUser && mediaPlayer != null){
                     buttonState = 0;
                     mediaPlayer.pause();
                     currentProgress = progress;
@@ -107,16 +112,16 @@ public class Main extends Fragment {
             }
 
             @Override
-            public void onStartTrackingTouch(SeekBar seekBar) {
-
-            }
+            public void onStartTrackingTouch(SeekBar seekBar) {}
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                mediaPlayer.seekTo(currentProgress);
-                if (sliderChecker) {
-                    buttonState = 1;
-                    mediaPlayer.start();
+                if (mediaPlayer != null) {
+                    mediaPlayer.seekTo(currentProgress);
+                    if (sliderChecker) {
+                        buttonState = 1;
+                        mediaPlayer.start();
+                    }
                 }
 
             }
@@ -163,6 +168,7 @@ public class Main extends Fragment {
 
 
                 mediaPlayer = null;
+                mainUri = null;
                 debug++;
                 isThreadActive = false;
                 bar.setProgress(0);

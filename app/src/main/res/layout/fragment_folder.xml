@@ -18,16 +18,28 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" >
 
+
             <Button
                 android:id="@+id/addToLibrary"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:backgroundTint="#FFFFFF"
-                android:textColor="@color/black"
-
                 android:text="Add"
+
+                android:textColor="@color/black"
                 app:cornerRadius="0dp" />
 
+
+            <Button
+                android:id="@+id/deleteAllButton"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Delete All"
+                android:backgroundTint="#FFFFFF"
+                android:textColor="@color/black"
+
+                app:cornerRadius="0dp"
+                />
 
 
 
