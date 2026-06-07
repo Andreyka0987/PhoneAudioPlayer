@@ -28,7 +28,7 @@ public class Player {
     }
 
     public static void updateIndex(){
-        if (uriIndex != arrOfStringUri.length-1) {
+        if (arrOfStringUri != null && uriIndex != arrOfStringUri.length-1) {
             uriIndex++;
         }else {
             uriIndex = 0;

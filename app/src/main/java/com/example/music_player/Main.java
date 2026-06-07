@@ -12,6 +12,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
+import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -54,34 +55,7 @@ public class Main extends Fragment {
 
 
                 if (buttonState == 0){
-
-
-                    if (mediaPlayer == null) {
-                        mainUri = Player.getNextMusic();
-
-                        if (!mainUri.toString().equals("10")) {
-
-                            mediaPlayer = MediaPlayer.create(view.getContext(), mainUri);
-                        }
-                    }
-
-                    if (!mainUri.toString().equals("10")) {
-                        playButton.setImageResource(R.drawable.pause);
-                        sliderChecker = true;
-                        bar.setMax(mediaPlayer.getDuration());
-                        buttonState++;
-                        mediaPlayer.start();
-
-
-                        if (!isThreadActive) {
-                            new BarThread().start();
-                            isThreadActive = true;
-                        }
-                    }
-                    else{
-                        Toast.makeText(context,"Something went wrong",Toast.LENGTH_SHORT).show();
-                    }
-
+                    onPlay(context);
 
 
                 }else{
@@ -144,6 +118,7 @@ public class Main extends Fragment {
         @Override
         public void run() {
             super.run();
+            Looper.prepare();
 
             try {
                 while (true) {
@@ -175,6 +150,7 @@ public class Main extends Fragment {
                 currentProgress = 0;
                 Player.updateIndex();
                 interrupt();
+                onPlay(context);
 
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
@@ -184,6 +160,33 @@ public class Main extends Fragment {
     }
 
 
+    public void onPlay(Context context){
 
+        if (mediaPlayer == null) {
+            mainUri = Player.getNextMusic();
+
+            if (!mainUri.toString().equals("10")) {
+
+                mediaPlayer = MediaPlayer.create(context, mainUri);
+            }
+        }
+
+        if (!mainUri.toString().equals("10")) {
+            playButton.setImageResource(R.drawable.pause);
+            sliderChecker = true;
+            bar.setMax(mediaPlayer.getDuration());
+            buttonState++;
+            mediaPlayer.start();
+
+
+            if (!isThreadActive) {
+                new BarThread().start();
+                isThreadActive = true;
+            }
+        }
+        else{
+            Toast.makeText(context,"Something went wrong",Toast.LENGTH_SHORT).show();
+        }
+    }
 
 }
