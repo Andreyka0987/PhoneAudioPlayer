@@ -1,7 +1,9 @@
 package com.example.music_player;
 
 import android.annotation.SuppressLint;
+import android.app.ActivityManager;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
 import android.media.MediaPlayer;
@@ -13,6 +15,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import android.os.Looper;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -28,10 +31,11 @@ public class Main extends Fragment {
     ImageView playButton;
     int buttonState = 0;
     boolean isThreadActive = false;
-    MediaPlayer mediaPlayer;
+    Intent musicIntent;
     int currentProgress = 0;
     boolean sliderChecker = false;
     int debug = 0;
+
 
     Uri mainUri = null;
     @Override
@@ -44,6 +48,12 @@ public class Main extends Fragment {
 
         bar.getProgressDrawable().setColorFilter(Color.rgb(255,255,255), PorterDuff.Mode.MULTIPLY);
 
+
+            if (isForegroundServiceStarted()){
+                ForeGroundMusicService.mediaPlayer.pause();
+            }
+        musicIntent = new Intent(context, ForeGroundMusicService.class);
+
         Folder.updateInternalLib(context);
 
 
@@ -54,6 +64,7 @@ public class Main extends Fragment {
             public void onClick(View v) {
 
 
+
                 if (buttonState == 0){
                     onPlay(context);
 
@@ -62,9 +73,9 @@ public class Main extends Fragment {
                     buttonState--;
                     sliderChecker = false;
                     playButton.setImageResource(R.drawable.play);
-                    mediaPlayer.pause();
+                    ForeGroundMusicService.mediaPlayer.pause();
 
-                    if (mediaPlayer.getCurrentPosition() > 0) {
+                    if (ForeGroundMusicService.mediaPlayer.getCurrentPosition() > 0) {
 //                        Toast.makeText(view.getContext(), String.valueOf(mediaPlayer.getCurrentPosition()), Toast.LENGTH_SHORT).show();
                     }
 
@@ -77,9 +88,9 @@ public class Main extends Fragment {
         bar.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                if (fromUser && mediaPlayer != null){
+                if (fromUser && ForeGroundMusicService.mediaPlayer != null){
                     buttonState = 0;
-                    mediaPlayer.pause();
+                    ForeGroundMusicService.mediaPlayer.pause();
                     currentProgress = progress;
 
                 }
@@ -90,11 +101,16 @@ public class Main extends Fragment {
 
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
-                if (mediaPlayer != null) {
-                    mediaPlayer.seekTo(currentProgress);
+                if (ForeGroundMusicService.mediaPlayer != null) {
+                    ForeGroundMusicService.mediaPlayer.seekTo(currentProgress);
                     if (sliderChecker) {
                         buttonState = 1;
-                        mediaPlayer.start();
+                        if (!isForegroundServiceStarted()){
+                            context.startForegroundService(musicIntent);
+                        }
+                        else{
+                            ForeGroundMusicService.mediaPlayer.start();
+                        }
                     }
                 }
 
@@ -142,7 +158,7 @@ public class Main extends Fragment {
                 }
 
 
-                mediaPlayer = null;
+                ForeGroundMusicService.mediaPlayer = null;
                 mainUri = null;
                 debug++;
                 isThreadActive = false;
@@ -162,22 +178,27 @@ public class Main extends Fragment {
 
     public void onPlay(Context context){
 
-        if (mediaPlayer == null) {
+        if (ForeGroundMusicService.mediaPlayer == null) {
             mainUri = Player.getNextMusic();
 
             if (!mainUri.toString().equals("10")) {
 
-                mediaPlayer = MediaPlayer.create(context, mainUri);
+                ForeGroundMusicService.mediaPlayer = MediaPlayer.create(context, mainUri);
+
             }
         }
 
         if (!mainUri.toString().equals("10")) {
             playButton.setImageResource(R.drawable.pause);
             sliderChecker = true;
-            bar.setMax(mediaPlayer.getDuration());
+            bar.setMax(ForeGroundMusicService.mediaPlayer.getDuration());
             buttonState++;
-            mediaPlayer.start();
-
+            if (!isForegroundServiceStarted()) {
+                context.startForegroundService(musicIntent);
+            }
+            else{
+                ForeGroundMusicService.mediaPlayer.start();
+            }
 
             if (!isThreadActive) {
                 new BarThread().start();
@@ -188,5 +209,14 @@ public class Main extends Fragment {
             Toast.makeText(context,"Something went wrong",Toast.LENGTH_SHORT).show();
         }
     }
+
+    public boolean isForegroundServiceStarted(){
+        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        for (ActivityManager.RunningServiceInfo serviceInfo: activityManager.getRunningServices(Integer.MAX_VALUE)){
+            if (ForeGroundMusicService.class.getName().equals(serviceInfo.service.getClassName())){return true;}
+        }
+        return false;
+    }
+
 
 }
